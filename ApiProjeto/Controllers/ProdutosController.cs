@@ -154,5 +154,55 @@ namespace ApiProjeto.Controllers
                 conexao.Close();
             }
         }
+
+        [HttpDelete]
+        [Route("{id:int}")]
+        public IActionResult DeletaProduto(int id)
+        {
+            MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+
+            try
+            {
+                conexao.Open();
+
+                string sql = @"SELECT * FROM produto WHERE id = @id";
+
+                MySqlCommand comandoBusca = new MySqlCommand(sql, conexao);
+
+                comandoBusca.Parameters.AddWithValue("@id", id);
+
+                var reader = comandoBusca.ExecuteReader();
+
+                if (!reader.Read())
+                {
+                    return NotFound($"Produto de ID {id} não encontrado");
+                }
+
+                reader.Close();
+
+                string deletarProduto = @"DELETE FROM produto WHERE id = @id";
+
+                MySqlCommand comandoDeleta = new MySqlCommand(deletarProduto, conexao);
+
+                comandoDeleta.Parameters.AddWithValue("@id", id);
+
+                int linhasAfetadas = comandoDeleta.ExecuteNonQuery();
+
+                if(linhasAfetadas == 0)
+                {
+                    return UnprocessableEntity("Não foi posível realizar a exclusão do produto!");
+                }
+
+                return Ok($"Produto de ID {id} excluído.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            finally
+            {
+                conexao.Close();
+            }
+        }
     }
 }
