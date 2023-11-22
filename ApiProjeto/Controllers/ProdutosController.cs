@@ -17,16 +17,17 @@ namespace ApiProjeto.Controllers
         [HttpGet]
         public IActionResult RetornaProdutos()
         {
+            MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+
             try
             {
-                MySqlConnection conn = new MySqlConnection(MySqlConnection);
+                
+                conexao.Open();
 
-                conn.Open();
+                string sql = @"SELECT * FROM produto";
 
-                string sql = @"SELECT * FROM PRODUTO";
-
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                var reader = cmd.ExecuteReader();
+                MySqlCommand comando = new MySqlCommand(sql, conexao);
+                var reader = comando.ExecuteReader();
 
                 List<Produto> lista = new List<Produto>();
 
@@ -40,13 +41,54 @@ namespace ApiProjeto.Controllers
                     item.id_categoria = int.Parse(reader["id_categoria"].ToString());
                     lista.Add(item);
                 }
-
               
                 return Ok(lista);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+            finally
+            {
+                conexao.Close();
+            }
+
+        }
+
+        [HttpPost]
+        public IActionResult NovoProduto([FromBody] Produto produto)
+        {
+            MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+            try
+            {
+                conexao.Open();
+
+                string sql = @"INSERT INTO produto(nome_produto, descricao_produto, valor, id_categoria) VALUES(@nome, @descricao, @valor, @idCategoria)";
+
+                MySqlCommand comando = new MySqlCommand(sql, conexao);
+
+                comando.Parameters.AddWithValue("@nome", produto.nome_produto);
+                comando.Parameters.AddWithValue("@descricao", produto.descricao_produto);
+                comando.Parameters.AddWithValue("@valor", produto.valor);
+                comando.Parameters.AddWithValue("@idCategoria", produto.id_categoria);
+
+                int linhasAfetadas = comando.ExecuteNonQuery();
+
+                if(linhasAfetadas == 0)
+                {
+                    return UnprocessableEntity("Não foi posssível inserir o produto!");
+                }
+
+                return Created("", produto.nome_produto);
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.Message);
+            }
+            finally
+            {
+                conexao.Close();
             }
         }
     }
