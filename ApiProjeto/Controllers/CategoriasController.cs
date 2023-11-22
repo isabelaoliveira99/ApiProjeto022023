@@ -85,5 +85,113 @@ namespace ApiProjeto.Controllers
                 conexao.Close();
             }
         }
+
+        [HttpPut]
+        [Route("{id:int}")]
+        public ActionResult AlteraCategoria(int id, [FromBody] Categoria categoria)
+        {
+            MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+
+            try
+            {
+
+                if(id != categoria.id)
+                {
+                    return StatusCode(StatusCodes.Status417ExpectationFailed, "Id da URL e do Body não correspondem");
+                }
+
+                conexao.Open();
+
+                string sqlConsulta = @"SELECT * FROM categoria WHERE id = @id";
+
+                MySqlCommand categoriaExistente = new MySqlCommand(sqlConsulta, conexao);
+
+                categoriaExistente.Parameters.AddWithValue("@id", id);
+
+                var readerCategoria = categoriaExistente.ExecuteReader();
+
+                if (!readerCategoria.Read())
+                {
+                    return NotFound($"Categoria de ID {id} não encontrado");
+                }
+
+                readerCategoria.Close();
+
+                string updateCategoria = @"UPDATE categoria SET nome_categoria = @nome, descricao_categoria = @descricao WHERE id = @id";
+
+                MySqlCommand updateComando = new MySqlCommand(updateCategoria, conexao);
+
+                updateComando.Parameters.AddWithValue("@id", categoria.id);
+                updateComando.Parameters.AddWithValue("@nome", categoria.nome_categoria);
+                updateComando.Parameters.AddWithValue("@descricao", categoria.descricao_categoria);
+
+                int linhasAfetadas = updateComando.ExecuteNonQuery();
+
+                if (linhasAfetadas == 0)
+                {
+                    return UnprocessableEntity("Não foi posível realizar a alteração da categoria!");
+                }
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            finally
+            {
+                conexao.Close();
+            }
+        }
+
+        [HttpDelete]
+        [Route("{id:int}")]
+        public ActionResult DeletaCategoria(int id)
+        {
+            MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+
+            try
+            {
+                conexao.Open();
+
+                string sql = @"SELECT * FROM categoria WHERE id = @id";
+
+                MySqlCommand comandoBusca = new MySqlCommand(sql, conexao);
+
+                comandoBusca.Parameters.AddWithValue("@id", id);
+
+                var reader = comandoBusca.ExecuteReader();
+
+                if (!reader.Read())
+                {
+                    return NotFound($"Categoria de ID {id} não encontrada");
+                }
+
+                reader.Close();
+
+                string deletarCategoria = @"DELETE FROM categoria WHERE id = @id";
+
+                MySqlCommand comandoDeleta = new MySqlCommand(deletarCategoria, conexao);
+
+                comandoDeleta.Parameters.AddWithValue("@id", id);
+
+                int linhasAfetadas = comandoDeleta.ExecuteNonQuery();
+
+                if (linhasAfetadas == 0)
+                {
+                    return UnprocessableEntity("Não foi posível realizar a exclusão da categoria!");
+                }
+
+                return Ok($"Categoria de ID {id} excluída.");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            finally
+            {
+                conexao.Close();
+            }
+        }
     }
 }
