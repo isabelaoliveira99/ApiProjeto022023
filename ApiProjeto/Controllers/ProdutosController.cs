@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MySql.Data.MySqlClient;
 using System.Data;
+using System.Security.Cryptography;
 
 namespace ApiProjeto.Controllers
 {
@@ -59,6 +60,7 @@ namespace ApiProjeto.Controllers
         public IActionResult NovoProduto([FromBody] Produto produto)
         {
             MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+
             try
             {
                 conexao.Open();
@@ -80,6 +82,67 @@ namespace ApiProjeto.Controllers
                 }
 
                 return Created("", produto.nome_produto);
+            }
+            catch (Exception ex)
+            {
+
+                return BadRequest(ex.Message);
+            }
+            finally
+            {
+                conexao.Close();
+            }
+        }
+
+        [HttpPut]
+        [Route("{id:int}")]
+        public IActionResult AlteraProduto(int id, [FromBody] Produto produto)
+        {
+            MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+
+            try
+            {
+                if (id != produto.id)
+                {
+                    return StatusCode(StatusCodes.Status417ExpectationFailed, "Id da URL e do Body não correspondem");
+                }
+
+                conexao.Open();
+
+                string sqlConsulta = @"SELECT * FROM produto WHERE id = @id";
+
+                MySqlCommand produtoExistente = new MySqlCommand(sqlConsulta, conexao);
+
+                produtoExistente.Parameters.AddWithValue("@id", id);
+
+                var readerproduto = produtoExistente.ExecuteReader();
+
+                if (!readerproduto.Read())
+                {
+                    return NotFound($"Produto de ID {id} não encontrado");
+                }
+
+                readerproduto.Close();
+
+                string updateProduto = @"UPDATE produto SET nome_produto = @nome, descricao_produto = @descricao, valor = @valor, id_categoria = @idCategoria WHERE id = @id";
+
+                MySqlCommand updateComando = new MySqlCommand(updateProduto, conexao);
+
+                updateComando.Parameters.AddWithValue("@nome", produto.nome_produto);
+                updateComando.Parameters.AddWithValue("@descricao", produto.descricao_produto);
+                updateComando.Parameters.AddWithValue("@valor", produto.valor);
+                updateComando.Parameters.AddWithValue("@idCategoria", produto.valor);
+                updateComando.Parameters.AddWithValue("@id", produto.id);
+
+                int linhasAfetadas=  updateComando.ExecuteNonQuery();
+
+                if (linhasAfetadas == 0)
+                {
+                    return UnprocessableEntity("Não foi posível realizar a alteração do produto!");
+                }
+
+                return Ok();
+
             }
             catch (Exception ex)
             {
