@@ -90,5 +90,65 @@ namespace ApiProjeto.Controllers
                 conexao.Close();
             }
         }
+
+        [HttpPut]
+        [Route("{id:int}")]
+        public ActionResult AlteraCliente(int id, [FromBody] Cliente cliente)
+        {
+            MySqlConnection conexao = new MySqlConnection(MySqlConnection);
+
+            try
+            {
+
+                if (id != cliente.id)
+                {
+                    return StatusCode(StatusCodes.Status417ExpectationFailed, "Id da URL e do Body não correspondem");
+                }
+
+                conexao.Open();
+
+                string sqlConsulta = @"SELECT * FROM cliente WHERE id = @id";
+
+                MySqlCommand clienteExistente = new MySqlCommand(sqlConsulta, conexao);
+
+                clienteExistente.Parameters.AddWithValue("@id", id);
+
+                var readerCliente = clienteExistente.ExecuteReader();
+
+                if (!readerCliente.Read())
+                {
+                    return NotFound($"Cliente de ID {id} não encontrado");
+                }
+
+                readerCliente.Close();
+
+                string updateCliente = @"UPDATE cliente SET nome_cliente = @nome, cpf = @cpf, endereco = @endereco, telefone = @telefone WHERE id = @id";
+
+                MySqlCommand updateComando = new MySqlCommand(updateCliente, conexao);
+
+                updateComando.Parameters.AddWithValue("@id", cliente.id);
+                updateComando.Parameters.AddWithValue("@nome", cliente.nome_cliente);
+                updateComando.Parameters.AddWithValue("@cpf", cliente.cpf);
+                updateComando.Parameters.AddWithValue("@endereco", cliente.endereco);
+                updateComando.Parameters.AddWithValue("@telefone", cliente.telefone);
+
+                int linhasAfetadas = updateComando.ExecuteNonQuery();
+
+                if (linhasAfetadas == 0)
+                {
+                    return UnprocessableEntity("Não foi posível realizar a alteração do cliente!");
+                }
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            finally
+            {
+                conexao.Close();
+            }
+        }
     }
 }
